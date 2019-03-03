@@ -31,20 +31,32 @@ def main():
 
 def insert_csv_to_db(filename, username):
     logging.info("Loading CSV file %s" % filename)
-    with open(filename,'rb') as fin:
-        dr = csv.DictReader(fin)
-        to_db = [(i['RSID'], i['CHROMOSOME'],i['POSITION'],i['RESULT']) for i in dr]
+    try:
+        with open(filename,'rb') as fin:
+            dr = csv.DictReader(fin)
+            to_db = [(i['RSID'], i['CHROMOSOME'],i['POSITION'],i['RESULT']) for i in dr]
+    except Exception as e:
+        logging.error("Opening CSV failed. Original error was: " + str(e))
+        sys.exit(1)
 
-    logging.info("Opening database file %s" % filename)
-    con = sqlite3.connect('nzamb.lite')
-    cur = con.cursor()
+    try:
+        logging.info("Opening database file %s" % filename)
+        con = sqlite3.connect('nzamb.lite')
+        cur = con.cursor()
+    except Exception as e:
+        logging.error("Opening DATABASE failed. Original error was: " + str(e))
+        sys.exit(1)
 
-    logging.debug("Creating table and inserting data to database")
-    cur.execute("DROP TABLE IF EXISTS %s" % username)
-    cur.execute("CREATE TABLE %s(ID CHARACTER(15) PRIMARY KEY, CHROM CHARACTER(1), POS INTEGER, RESULT CHAR(2))" % username)
-    cur.executemany("INSERT INTO %s VALUES (?, ?, ?, ?);" % username, to_db)
-    con.commit()
-    con.close()
+    try:
+        logging.debug("Creating table and inserting data to database")
+        cur.execute("DROP TABLE IF EXISTS %s" % username)
+        cur.execute("CREATE TABLE %s(ID CHARACTER(15) PRIMARY KEY, CHROM CHARACTER(1), POS INTEGER, RESULT CHAR(2))" % username)
+        cur.executemany("INSERT INTO %s VALUES (?, ?, ?, ?);" % username, to_db)
+        con.commit()
+        con.close()
+    except Exception as e:
+        logging.error("Writing DATABASE failed. Original error was: " + str(e))
+        sys.exit(1)
 
 
 if __name__ == "__main__":

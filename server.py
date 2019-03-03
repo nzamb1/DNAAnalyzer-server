@@ -4,6 +4,8 @@ import logging
 import base64
 from flask import jsonify, Flask
 from flask import request
+from flask import abort
+from flask import Response
 app = Flask(__name__)
 
 
@@ -21,9 +23,14 @@ def develfile():
 
         with open(userfile, 'w') as file:
                 file.write(request.form['rawdata'].encode("UTF-8"))
+        logging.info("Raw file saved")
         print "File saved."
 
-        subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username])
+        retcode =  subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username])
+        if (retcode <> 0):
+            logging.error("Error processing RAW data file")
+            abort(Response('Error processing file'))
+        logging.info("Raw file processed successfully")
         return "ok"
     else:
         return "Something is wrong..."
