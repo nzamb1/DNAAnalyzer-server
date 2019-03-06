@@ -14,9 +14,12 @@ logging.basicConfig(filename="server.log", format = u'LINE:%(lineno)d# %(levelna
 @app.route('/develfile',methods=['GET','POST'])
 def develfile():
     if request.method == 'POST':
-        username = request.form['userName']
-        password = request.form['password']
-        userfile = username + ".dat"
+        username  = request.form['userName']
+        password  = request.form['password']
+        userfile  = username + ".csv"
+        dbfile    = username + ".db"
+        initialdb = 'initial.db'
+
         logging.debug("Request recived username %s" % username)
         logging.debug("Request recived password %s" % password)
         logging.debug("Size of data:" + str(len(request.form['rawdata'])))
@@ -26,11 +29,22 @@ def develfile():
         logging.info("Raw file saved")
         print "File saved."
 
-        retcode =  subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username])
+        logging.info("Loading data to database from CSV")
+        retcode =  subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username, '-s%s' % dbfile])
         if (retcode <> 0):
             logging.error("Error processing RAW data file")
-            abort(Response('Error processing file'))
-        logging.info("Raw file processed successfully")
+            #abort('Error processing file')
+            return "Something is wrong...", 500
+        logging.info("Data loaded successfully")
+
+        logging.info("Analizing database file")
+        retcode =  subprocess.call(['python', 'analyze_file.py', '-f%s' % initialdb,'-u%s' % username, '-s%s' % dbfile])
+        if (retcode <> 0):
+            logging.error("Error processing RAW data file")
+            #abort('Error processing file')
+            return "Something is wrong...", 500
+        logging.info("Analizing completed successfully")
+
         return "ok"
     else:
         return "Something is wrong..."
@@ -39,9 +53,11 @@ def develfile():
 def basiccounters():
     if request.method == 'POST':
         username = request.form['userName']
+        dbfile    = username + ".db"
+
         logging.info("Username %s" % username)
         logging.info("Calling function to read data from DB")
-        counters = get_basic_counters(username,'rs429358')
+        counters = get_basic_counters(dbfile)
 
         disease     = [i[0] for i in counters]
         porbability = [i[1] for i in counters]
@@ -50,13 +66,13 @@ def basiccounters():
         return jsonify({'Porbability' : porbability ,'Disease' : disease, 'Icons' : icons})
 
 
-def get_basic_counters(username,snp_id):
-    logging.info("Opening database file %s" % "HARDCODED")
-    con = sqlite3.connect('nzamb.lite')
+def get_basic_counters(dbfile):
+    logging.info("Opening database file %s" % dbfile)
+    con = sqlite3.connect(dbfile)
     cur = con.cursor()
 
     logging.debug("Reading data from database")
-    cur.execute("SELECT * FROM %s" % 'nzamb1_disease')
+    cur.execute("SELECT * FROM disease")
     res = cur.fetchall()
 
     con.close()
