@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sqlite3
 import logging
@@ -10,6 +11,7 @@ app = Flask(__name__)
 
 
 logging.basicConfig(filename="server.log", format = u'LINE:%(lineno)d# %(levelname)s %(asctime)s %(message)s', level = logging.DEBUG)
+logging.info("Starting Flask server...")
 
 @app.route('/develfile',methods=['GET','POST'])
 def develfile():
@@ -19,6 +21,7 @@ def develfile():
         userfile  = username + ".csv"
         dbfile    = username + ".db"
         initialdb = 'initial.db'
+        analyzedb = 'analyze.db'
 
         logging.debug("Request recived username %s" % username)
         logging.debug("Request recived password %s" % password)
@@ -30,12 +33,18 @@ def develfile():
         print "File saved."
 
         logging.info("Loading data to database from CSV")
-        retcode =  subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username, '-s%s' % dbfile])
+        retcode =  subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username, '-s%s' % dbfile, '-a%s' % analyzedb])
         if (retcode <> 0):
             logging.error("Error processing RAW data file")
             #abort('Error processing file')
             return "Something is wrong...", 500
         logging.info("Data loaded successfully")
+
+        if os.path.exists(userfile):
+            os.remove(userfile)
+            logging.info("CSV file removed")
+        else:
+            logging.error("File does not exist")
 
         logging.info("Analizing database file")
         retcode =  subprocess.call(['python', 'analyze_file.py', '-f%s' % initialdb,'-u%s' % username, '-s%s' % dbfile])
