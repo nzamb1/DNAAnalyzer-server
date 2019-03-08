@@ -33,7 +33,7 @@ def develfile():
         print "File saved."
 
         logging.info("Loading data to database from CSV")
-        retcode =  subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username, '-s%s' % dbfile, '-a%s' % analyzedb])
+        retcode =  subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username, '-s%s' % dbfile])
         if (retcode <> 0):
             logging.error("Error processing RAW data file")
             #abort('Error processing file')
@@ -47,9 +47,9 @@ def develfile():
             logging.error("File does not exist")
 
         logging.info("Analizing database file")
-        retcode =  subprocess.call(['python', 'analyze_file.py', '-f%s' % initialdb,'-u%s' % username, '-s%s' % dbfile])
+        retcode =  subprocess.call(['python', 'analyze_file.py', '-f%s' % initialdb,'-u%s' % username, '-s%s' % dbfile, '-a%s' % analyzedb])
         if (retcode <> 0):
-            logging.error("Error processing RAW data file")
+            logging.error("Error Analyzing RAW data file")
             #abort('Error processing file')
             return "Something is wrong...", 500
         logging.info("Analizing completed successfully")
