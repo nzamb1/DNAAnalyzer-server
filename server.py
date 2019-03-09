@@ -10,7 +10,7 @@ from flask import Response
 app = Flask(__name__)
 
 
-logging.basicConfig(filename="server.log", format = u'LINE:%(lineno)d# %(levelname)s %(asctime)s %(message)s', level = logging.DEBUG)
+logging.basicConfig(filename="log/server.log", format = u'LINE:%(lineno)d# %(levelname)s %(asctime)s %(message)s', level = logging.DEBUG)
 logging.info("Starting Flask server...")
 
 @app.route('/develfile',methods=['GET','POST'])
@@ -65,6 +65,11 @@ def basiccounters():
         dbfile    = username + ".db"
 
         logging.info("Username %s" % username)
+        logging.info("Check if DB file exists: %s" % dbfile)
+	if not os.path.exists(dbfile):
+            logging.error("DB file does not exists: %s" % dbfile)
+            return "Something is wrong...", 500
+
         logging.info("Calling function to read data from DB")
         counters = get_basic_counters(dbfile)
 

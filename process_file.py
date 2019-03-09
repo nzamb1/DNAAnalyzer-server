@@ -4,7 +4,7 @@ import subprocess
 import csv, sqlite3
 from argparse import ArgumentParser
 
-logging.basicConfig(filename="process_file.log", format = u'LINE:%(lineno)d# %(levelname)s %(asctime)s %(message)s', level = logging.INFO)
+logging.basicConfig(filename="log/process_file.log", format = u'LINE:%(lineno)d# %(levelname)s %(asctime)s %(message)s', level = logging.INFO)
 
 
 def main():
