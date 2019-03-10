@@ -80,6 +80,30 @@ def basiccounters():
         return jsonify({'Porbability' : porbability ,'Disease' : disease, 'Icons' : icons})
 
 
+@app.route("/getdiseasedetails", methods=['POST', 'GET'])
+def getdiseasedetails():
+    username     = request.form['userName']
+    diseasename  = request.form['diseasename']
+
+    dbfile       = username + ".db"
+
+    logging.info("Opening database file %s" % dbfile)
+    con = sqlite3.connect(dbfile)
+    cur = con.cursor()
+
+    logging.debug("Reading data from database")
+
+    # DISEASE_NAME TEXT, DESCRIPTION TEXT, RSID TEXT, RESULT TEXT, MAGNITUDE REAL
+    cur.execute("SELECT DESCRIPTION, RSID, RESULT FROM disease_analyze WHERE DISEASE_NAME = %s" % diseasename)
+    res = cur.fetchall()
+    con.close()
+
+    description = [i[0] for i in res]
+    rsid        = [i[1] for i in res]
+    mutation    = [i[2] for i in res] 
+
+    return jsonify({'Description' : description ,'Rsid' : rsid, 'Mutation' : mutation})
+
 def get_basic_counters(dbfile):
     logging.info("Opening database file %s" % dbfile)
     con = sqlite3.connect(dbfile)

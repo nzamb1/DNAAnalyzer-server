@@ -46,7 +46,7 @@ def performanalyze(analyzedb, dbfilename, username):
     try:
         logging.debug("Attaching analyze DB to user DB")
         cur.execute("ATTACH DATABASE '%s' AS analyze" % analyzedb)
-        cur.execute("INSERT INTO disease_analyze SELECT t2.DISEASE_NAME, t1.ID, t1.RESULT, t2.MAGNITUDE FROM %s AS t1 INNER JOIN analyze.disease_list AS t2 ON (t1.id = t2.RSID) AND t1.RESULT = t2.RESULT;" % username)
+        cur.execute("INSERT INTO disease_analyze SELECT t2.DISEASE_NAME, t2.DESCRIPTION, t1.ID, t1.RESULT, t2.MAGNITUDE FROM %s AS t1 INNER JOIN analyze.disease_list AS t2 ON (t1.id = t2.RSID) AND t1.RESULT = t2.RESULT;" % username)
         con.commit()
         con.close()
     except Exception as e:
