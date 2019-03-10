@@ -13,13 +13,16 @@ app = Flask(__name__)
 logging.basicConfig(filename="log/server.log", format = u'LINE:%(lineno)d# %(levelname)s %(asctime)s %(message)s', level = logging.DEBUG)
 logging.info("Starting Flask server...")
 
+commaodbpath = "commondb/"
+userdbpath   = "userdb/"
+
 @app.route('/develfile',methods=['GET','POST'])
 def develfile():
     if request.method == 'POST':
         username  = request.form['userName']
         password  = request.form['password']
         userfile  = username + ".csv"
-        dbfile    = username + ".db"
+        dbfile    = userdbpath + username + ".db"
         initialdb = 'initial.db'
         analyzedb = 'analyze.db'
 
@@ -62,7 +65,7 @@ def develfile():
 def basiccounters():
     if request.method == 'POST':
         username = request.form['userName']
-        dbfile    = username + ".db"
+        dbfile    = userdbpath + username + ".db"
 
         logging.info("Username %s" % username)
         logging.info("Check if DB file exists: %s" % dbfile)
@@ -85,8 +88,10 @@ def getdiseasedetails():
     username     = request.form['userName']
     diseasename  = request.form['diseasename']
 
-    dbfile       = username + ".db"
+    dbfile       = userdbpath + username + ".db"
 
+    logging.debug("Recived username: %s " % username)
+    logging.debug("Recived diseasename: %s " % diseasename)
     try:
         logging.info("Opening database file %s" % dbfile)
         con = sqlite3.connect(dbfile)
@@ -95,7 +100,7 @@ def getdiseasedetails():
         logging.debug("Reading data from database")
 
         # DISEASE_NAME TEXT, DESCRIPTION TEXT, RSID TEXT, RESULT TEXT, MAGNITUDE REAL
-        cur.execute("SELECT DESCRIPTION, RSID, RESULT FROM disease_analyze WHERE DISEASE_NAME = %s" % diseasename)
+        cur.execute("SELECT DESCRIPTION, RSID, RESULT FROM disease_analyze WHERE DISEASE_NAME = '%s'" % diseasename)
         res = cur.fetchall()
         con.close()
     except Exception as e:
