@@ -87,16 +87,20 @@ def getdiseasedetails():
 
     dbfile       = username + ".db"
 
-    logging.info("Opening database file %s" % dbfile)
-    con = sqlite3.connect(dbfile)
-    cur = con.cursor()
+    try:
+        logging.info("Opening database file %s" % dbfile)
+        con = sqlite3.connect(dbfile)
+        cur = con.cursor()
 
-    logging.debug("Reading data from database")
+        logging.debug("Reading data from database")
 
-    # DISEASE_NAME TEXT, DESCRIPTION TEXT, RSID TEXT, RESULT TEXT, MAGNITUDE REAL
-    cur.execute("SELECT DESCRIPTION, RSID, RESULT FROM disease_analyze WHERE DISEASE_NAME = %s" % diseasename)
-    res = cur.fetchall()
-    con.close()
+        # DISEASE_NAME TEXT, DESCRIPTION TEXT, RSID TEXT, RESULT TEXT, MAGNITUDE REAL
+        cur.execute("SELECT DESCRIPTION, RSID, RESULT FROM disease_analyze WHERE DISEASE_NAME = %s" % diseasename)
+        res = cur.fetchall()
+        con.close()
+    except Exception as e:
+        logging.error("Error reading data from DB. Original error was: " + str(e))
+        return "Error reading data from DB...", 500
 
     description = [i[0] for i in res]
     rsid        = [i[1] for i in res]
