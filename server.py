@@ -83,6 +83,38 @@ def basiccounters():
         return jsonify({'Porbability' : porbability ,'Disease' : disease, 'Icons' : icons})
 
 
+@app.route("/searchrsid", methods=['POST', 'GET'])
+def searchrsid():
+    username     = request.form['userName']
+    rsid         = request.form['rsid']
+    dbfile       = userdbpath + username + ".db"
+
+    logging.debug("Recived username: %s " % username)
+    logging.debug("Recived rsid: %s " % rsid)
+
+    logging.info("Opening database file %s" % dbfile)
+    try:
+        con = sqlite3.connect(dbfile)
+        cur = con.cursor()
+
+        logging.debug("Reading data from database")
+        query = "SELECT * FROM %s WHERE ID LIKE \"%s\" LIMIT 100" % (username, "%" + rsid + "%")
+        logging.debug(query)
+        cur.execute(query)
+        res = cur.fetchall()
+        con.close()
+
+    except Exception as e:
+        logging.error("Error reading data from DB. Original error was: " + str(e))
+        return "Error reading data from DB...", 500
+
+    dbrsid      = [i[0] for i in res]
+    chrom       = [i[1] for i in res]
+    position    = [i[2] for i in res]
+    result      = [i[3] for i in res]
+
+    return jsonify({'Rsid' : dbrsid ,'Chromosome' : chrom, 'Position' : position, 'Result' : result})
+
 @app.route("/getdiseasedetails", methods=['POST', 'GET'])
 def getdiseasedetails():
     username     = request.form['userName']
