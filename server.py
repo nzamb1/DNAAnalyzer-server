@@ -21,7 +21,8 @@ def develfile():
     if request.method == 'POST':
         username  = request.form['userName']
         password  = request.form['password']
-        userfile  = username + ".csv"
+        filetype  = request.form['filetype']
+        userfile  = username + filetype 
         dbfile    = userdbpath + username + ".db"
         initialdb = 'initial.db'
         analyzedb = 'analyze.db'
@@ -45,7 +46,7 @@ def develfile():
 
         if os.path.exists(userfile):
             os.remove(userfile)
-            logging.info("CSV file removed")
+            logging.info("Uploaded file removed")
         else:
             logging.error("File does not exist")
 

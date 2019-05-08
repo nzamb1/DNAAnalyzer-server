@@ -1,7 +1,8 @@
 import sys
 import logging
 import subprocess
-import csv, sqlite3
+import csv, zipfile, sqlite3
+from zipfile import ZipFile
 from argparse import ArgumentParser
 
 logging.basicConfig(filename="log/process_file.log", format = u'LINE:%(lineno)d# %(levelname)s %(asctime)s %(message)s', level = logging.INFO)
@@ -10,7 +11,7 @@ logging.basicConfig(filename="log/process_file.log", format = u'LINE:%(lineno)d#
 def main():
     parser = ArgumentParser()
     parser.add_argument("-f", "--rawfile", dest="rawfilename",
-        help="CSV RAW data filename", metavar="FILE")
+        help="CSV or ZIP RAW data filename", metavar="FILE")
     parser.add_argument("-u", "--user", dest="username",
         help="Username", metavar="USERNAME")
     parser.add_argument("-s", "--dbfile", dest="dbfilename",
@@ -27,6 +28,22 @@ def main():
     dbfilename  = args.dbfilename
 
     logging.info("processing file %s" % rawfilename)
+    if zipfile.is_zipfile(rawfilename):
+        logging.info("Provided file is ZIP archive. Extracting...")
+
+	with ZipFile(rawfilename, 'r') as zipObj:
+	   # Get a list of all archived file names from the zip
+	   listOfFileNames = zipObj.namelist()
+	   # Iterate over the file names
+	   for fileName in listOfFileNames:
+	       # Check filename endswith csv
+	       if fileName.endswith('.csv'):
+		   # Extract a single file from zip
+		   rawfilename = zipObj.extract(fileName)
+    else:
+        logging.info("Provided file is NOT archive. Continuing...")
+
+
 
     subprocess.call(['sed', '-i', '/^#/ d', rawfilename]) # remove lines starting with special character
     insert_csv_to_db(dbfilename, rawfilename, username) # instert csv data to database
