@@ -24,7 +24,7 @@ def main():
         sys.exit(1)
 
     rawfilename = args.rawfilename
-    username    = args.username
+    username    = "userdata"
     dbfilename  = args.dbfilename
 
     logging.info("processing file %s" % rawfilename)
@@ -58,11 +58,16 @@ def insert_csv_to_db(dbfilename, rawfilename, username):
         logging.error("Opening DATABASE failed. Original error was: " + str(e))
         sys.exit(1)
 
+    #import pdb
+    #pdb.set_trace()
+
+    query = """INSERT INTO {table} VALUES (?, ?, ?, ?)""".format(table=username)
     try:
         logging.debug("Creating table and inserting data to database")
         cur.execute("DROP TABLE IF EXISTS %s" % username)
         cur.execute("CREATE TABLE %s(ID CHARACTER(15) PRIMARY KEY, CHROM CHARACTER(1), POS INTEGER, RESULT CHAR(2))" % username)
-        cur.executemany("INSERT INTO %s VALUES (?, ?, ?, ?);" % username, csv_db)
+        #cur.executemany("INSERT INTO %s VALUES (?, ?, ?, ?);" % username, csv_db)
+        cur.executemany(query, (csv_db))
         con.commit()
         con.close()
     except Exception as e:

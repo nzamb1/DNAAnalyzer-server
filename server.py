@@ -75,7 +75,7 @@ def develfile():
 def basiccounters():
     if request.method == 'POST':
         username = request.form['userName']
-        dbfile    = userdbpath + username + ".db"
+        dbfile    = userdbpath + request.form['userName'] + ".db"
 
         logging.info("Username %s" % username)
         logging.info("Check if DB file exists: %s" % dbfile)
@@ -95,9 +95,9 @@ def basiccounters():
 
 @app.route("/searchrsid", methods=['POST', 'GET'])
 def searchrsid():
-    username     = request.form['userName']
+    usertablename= "userdata"
     rsid         = request.form['rsid']
-    dbfile       = userdbpath + username + ".db"
+    dbfile       = userdbpath + request.form['userName'] + ".db"
 
     logging.debug("Recived username: %s " % username)
     logging.debug("Recived rsid: %s " % rsid)
@@ -108,7 +108,7 @@ def searchrsid():
         cur = con.cursor()
 
         logging.debug("Reading data from database")
-        query = "SELECT * FROM %s WHERE ID LIKE \"%s\" LIMIT 30" % (username, "%" + rsid + "%")
+        query = "SELECT * FROM %s WHERE ID LIKE \"%s\" LIMIT 30" % (usertablename, "%" + rsid + "%")
         logging.debug(query)
         cur.execute(query)
         res = cur.fetchall()
