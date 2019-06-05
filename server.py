@@ -99,8 +99,8 @@ def searchrsid():
     rsid         = request.form['rsid']
     dbfile       = userdbpath + request.form['userName'] + ".db"
 
-    logging.debug("Recived username: %s " % username)
-    logging.debug("Recived rsid: %s " % rsid)
+    logging.debug("Recived username: %s " % request.form['userName'])
+    logging.debug("Recived rsid: %s " % request.form['rsid'])
 
     logging.info("Opening database file %s" % dbfile)
     try:
