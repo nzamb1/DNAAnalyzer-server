@@ -7,6 +7,7 @@ from flask import jsonify, Flask
 from flask import request
 from flask import abort
 from flask import Response
+import zipfile
 app = Flask(__name__)
 
 
@@ -22,19 +23,27 @@ def develfile():
         username  = request.form['userName']
         password  = request.form['password']
         filetype  = request.form['filetype']
-        userfile  = username + filetype 
+        userfile  = str(username + "." + filetype)
         dbfile    = userdbpath + username + ".db"
         initialdb = 'initial.db'
         analyzedb = 'analyze.db'
 
         logging.debug("Request recived username %s" % username)
         logging.debug("Request recived password %s" % password)
+        logging.debug("Request recived filetype %s" % filetype)
         logging.debug("Size of data:" + str(len(request.form['rawdata'])))
 
-        with open(userfile, 'w') as file:
-                file.write(request.form['rawdata'].encode("UTF-8"))
+        with open(userfile, 'wb') as file:
+                #file.write(request.form['rawdata'].encode("UTF-8"))
+                file.write(base64.decodestring(request.form['rawdata']))
         logging.info("Raw file saved")
-        print "File saved."
+
+	if filetype == 'zip':
+        	logging.info("Zip file recived. Extracting...")
+		zipobj = zipfile.ZipFile(userfile, 'r')
+		userfile = zipobj.extract(zipobj.namelist()[0])
+	
+        #return "Something is wrong...", 500
 
         logging.info("Loading data to database from CSV")
         retcode =  subprocess.call(['python', 'process_file.py', '-f%s' % userfile, '-u%s' % username, '-s%s' % dbfile])
@@ -66,7 +75,7 @@ def develfile():
 def basiccounters():
     if request.method == 'POST':
         username = request.form['userName']
-        dbfile    = userdbpath + username + ".db"
+        dbfile    = userdbpath + request.form['userName'] + ".db"
 
         logging.info("Username %s" % username)
         logging.info("Check if DB file exists: %s" % dbfile)
@@ -86,12 +95,12 @@ def basiccounters():
 
 @app.route("/searchrsid", methods=['POST', 'GET'])
 def searchrsid():
-    username     = request.form['userName']
+    usertablename= "userdata"
     rsid         = request.form['rsid']
-    dbfile       = userdbpath + username + ".db"
+    dbfile       = userdbpath + request.form['userName'] + ".db"
 
-    logging.debug("Recived username: %s " % username)
-    logging.debug("Recived rsid: %s " % rsid)
+    logging.debug("Recived username: %s " % request.form['userName'])
+    logging.debug("Recived rsid: %s " % request.form['rsid'])
 
     logging.info("Opening database file %s" % dbfile)
     try:
@@ -99,7 +108,7 @@ def searchrsid():
         cur = con.cursor()
 
         logging.debug("Reading data from database")
-        query = "SELECT * FROM %s WHERE ID LIKE \"%s\" LIMIT 100" % (username, "%" + rsid + "%")
+        query = "SELECT * FROM %s WHERE ID LIKE \"%s\" LIMIT 30" % (usertablename, "%" + rsid + "%")
         logging.debug(query)
         cur.execute(query)
         res = cur.fetchall()

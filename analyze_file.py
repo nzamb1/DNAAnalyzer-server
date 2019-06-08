@@ -25,7 +25,7 @@ def main():
         sys.exit(1)
 
     initialdb    = args.initialdb
-    username     = args.username
+    username     = "userdata"
     dbfilename   = args.dbfilename
     analyzedb    = args.analyzedb
 
