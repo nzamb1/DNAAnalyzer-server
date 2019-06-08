@@ -2,6 +2,7 @@ import sys
 import logging
 import subprocess
 import csv, zipfile, sqlite3
+import re
 from argparse import ArgumentParser
 import pandas as pd
 
@@ -29,12 +30,27 @@ def main():
 
     logging.info("processing file %s" % rawfilename)
 
-    subprocess.call(['sed', '-i', '/^#/ d', rawfilename]) # remove lines starting with special character
-    if rawfilename.endswith('.txt'):
-    	logging.info("Converting txt file %s to CSV" % rawfilename)
-    	subprocess.call(['sed', '-i', 's/[ \t]/,/g', rawfilename]) # replacing tabs with comma
-	with file(rawfilename, 'r') as original: data = original.read()
-	with file(rawfilename, 'w') as modified: modified.write("RSID,CHROMOSOME,POSITION,RESULT\n" + data)
+    with open(rawfilename, 'r') as dnatxtfile:
+        datatocheck = dnatxtfile.read()
+
+    #Check file type by looking for specific line and execute relevant conversion process
+    if re.search('AncestryDNA', datatocheck, re.IGNORECASE):
+        logging.info("Recived file is AncestryDNA")
+        subprocess.call(['sed', '-i', '/^#/ d', rawfilename]) # remove lines starting with special character
+        subprocess.call(['sed', '-i', 's/\t//4;s/ /:/1', rawfilename]) # remove lines starting with special character
+        subprocess.call(['sed', '-i', '1 s/^.*$/RSID,CHROMOSOME,POSITION,RESULT/', rawfilename]) # remove lines starting with special character
+    elif re.search('MyHeritage', datatocheck, re.IGNORECASE):
+        logging.info("Recived file is MyHeritage")
+        subprocess.call(['sed', '-i', '/^#/ d', rawfilename]) # remove lines starting with special character
+    elif re.search('23andMe', datatocheck, re.IGNORECASE):
+        logging.info("Recived file is 23andMe")
+        subprocess.call(['sed', '-i', '/^#/ d', rawfilename]) # remove lines starting with special character
+        logging.info("Converting txt file %s to CSV" % rawfilename)
+        subprocess.call(['sed', '-i', 's/[ \t]/,/g', rawfilename]) # replacing tabs with comma
+        with file(rawfilename, 'r') as original: data = original.read()
+        with file(rawfilename, 'w') as modified: modified.write("RSID,CHROMOSOME,POSITION,RESULT\n" + data)
+    else:
+        logging.info("Unknown DNA file recived")
 
     insert_csv_to_db(dbfilename, rawfilename, username) # instert csv data to database
     logging.info("processing complete")
