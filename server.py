@@ -54,7 +54,7 @@ def develfile():
         logging.info("Data loaded successfully")
 
         if os.path.exists(userfile):
-            os.remove(userfile)
+            #os.remove(userfile)
             logging.info("Uploaded file removed")
         else:
             logging.error("File does not exist")

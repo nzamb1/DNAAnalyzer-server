@@ -37,8 +37,9 @@ def main():
     if re.search('AncestryDNA', datatocheck, re.IGNORECASE):
         logging.info("Recived file is AncestryDNA")
         subprocess.call(['sed', '-i', '/^#/ d', rawfilename]) # remove lines starting with special character
-        subprocess.call(['sed', '-i', 's/\t//4;s/ /:/1', rawfilename]) # remove lines starting with special character
-        subprocess.call(['sed', '-i', '1 s/^.*$/RSID,CHROMOSOME,POSITION,RESULT/', rawfilename]) # remove lines starting with special character
+        subprocess.call(['sed', '-i', 's/\t//4;s/ /:/1', rawfilename]) # merge last 2 columns to 1
+        subprocess.call(['sed', '-i', 's/[ \t]/,/g', rawfilename]) # replacing tabs with comma
+        subprocess.call(['sed', '-i', '1 s/^.*$/RSID,CHROMOSOME,POSITION,RESULT/', rawfilename]) # insert header for csv
     elif re.search('MyHeritage', datatocheck, re.IGNORECASE):
         logging.info("Recived file is MyHeritage")
         subprocess.call(['sed', '-i', '/^#/ d', rawfilename]) # remove lines starting with special character
