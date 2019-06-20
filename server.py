@@ -142,7 +142,7 @@ def getdiseasedetails():
         logging.debug("Reading data from database")
 
         # DISEASE_NAME TEXT, DESCRIPTION TEXT, RSID TEXT, RESULT TEXT, MAGNITUDE REAL
-        cur.execute("SELECT DESCRIPTION, RSID, RESULT FROM disease_analyze WHERE DISEASE_NAME = '%s'" % diseasename)
+        cur.execute('SELECT DESCRIPTION, RSID, RESULT FROM disease_analyze WHERE DISEASE_NAME = "%s"' % diseasename)
         res = cur.fetchall()
         con.close()
     except Exception as e:
@@ -161,7 +161,8 @@ def get_basic_counters(dbfile):
     cur = con.cursor()
 
     logging.debug("Reading data from database")
-    cur.execute("SELECT * FROM disease")
+    #cur.execute("SELECT * FROM disease")
+    cur.execute("SELECT DISTINCT t1.* FROM disease AS t1 JOIN disease_analyze AS t2 ON (t1.DISEASE_NAME = t2.DISEASE_NAME) ORDER BY 2 DESC")
     res = cur.fetchall()
 
     con.close()

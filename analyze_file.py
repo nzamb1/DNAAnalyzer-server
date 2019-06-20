@@ -48,9 +48,31 @@ def performanalyze(analyzedb, dbfilename, username):
         cur.execute("ATTACH DATABASE '%s' AS analyze" % analyzedb)
         cur.execute("INSERT INTO disease_analyze SELECT t2.DISEASE_NAME, t2.DESCRIPTION, t1.ID, t1.RESULT, t2.MAGNITUDE FROM %s AS t1 INNER JOIN analyze.disease_list AS t2 ON (t1.id = t2.RSID) AND t1.RESULT = t2.RESULT;" % username)
         con.commit()
+#        con.close()
+    except Exception as e:
+        logging.error("Performanalyze. Writing DATABASE failed. Original error was: " + str(e))
+        sys.exit(1)
+
+    try:
+        logging.info("Updating disease probability")
+        con.row_factory = lambda cursor, row: row[0]
+        cur = con.cursor()
+        cur.execute("SELECT DISTINCT DISEASE_NAME FROM disease_analyze ORDER BY 1")
+        diseases = cur.fetchall()
+        for disease in diseases:
+            cur.execute('SELECT MAGNITUDE FROM disease_analyze WHERE DISEASE_NAME = "%s"' % disease)
+            magnitude = cur.fetchall()
+            setmagnitude = max(magnitude) * (len(magnitude)*0.1+1)
+            if setmagnitude >= 3:
+                cur.execute('UPDATE disease SET PROBABILITY = 3 WHERE DISEASE_NAME = "%s"' % disease)
+            elif setmagnitude >= 2:
+                cur.execute('UPDATE disease SET PROBABILITY = 2 WHERE DISEASE_NAME = "%s"' % disease)
+            elif setmagnitude > 1:
+                cur.execute('UPDATE disease SET PROBABILITY = 1 WHERE DISEASE_NAME = "%s"' % disease)
+        con.commit()
         con.close()
     except Exception as e:
-        logging.error("Writing DATABASE failed. Original error was: " + str(e))
+        logging.error("Updating Disease probability failed. Original error was: " + str(e))
         sys.exit(1)
 
 def initializedb(initialdb, dbfilename, username):
@@ -75,7 +97,7 @@ def initializedb(initialdb, dbfilename, username):
         con.commit()
         con.close()
     except Exception as e:
-        logging.error("Writing DATABASE failed. Original error was: " + str(e))
+        logging.error("Initializedb. Writing DATABASE failed. Original error was: " + str(e))
         sys.exit(1)
 
     logging.info("Writing data completed. DB close.")
