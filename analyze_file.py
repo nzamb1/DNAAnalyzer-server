@@ -47,6 +47,7 @@ def performanalyze(analyzedb, dbfilename, username):
         logging.debug("Attaching analyze DB to user DB")
         cur.execute("ATTACH DATABASE '%s' AS analyze" % analyzedb)
         cur.execute("INSERT INTO disease_analyze SELECT t2.DISEASE_NAME, t2.DESCRIPTION, t1.ID, t1.RESULT, t2.MAGNITUDE FROM %s AS t1 INNER JOIN analyze.disease_list AS t2 ON (t1.id = t2.RSID) AND t1.RESULT = t2.RESULT;" % username)
+        cur.execute("INSERT INTO traits_analyze SELECT t2.TRAIT_NAME, t2.DESCRIPTION, t1.ID, t1.RESULT, t2.MAGNITUDE FROM %s AS t1 INNER JOIN analyze.traits_list AS t2 ON (t1.id = t2.RSID) AND t1.RESULT = t2.RESULT;" % username)
         con.commit()
 #        con.close()
     except Exception as e:
@@ -70,10 +71,32 @@ def performanalyze(analyzedb, dbfilename, username):
             elif setmagnitude > 1:
                 cur.execute('UPDATE disease SET PROBABILITY = 1 WHERE DISEASE_NAME = "%s"' % disease)
         con.commit()
-        con.close()
     except Exception as e:
         logging.error("Updating Disease probability failed. Original error was: " + str(e))
         sys.exit(1)
+
+    try:
+        logging.info("Updating traits probability")
+        con.row_factory = lambda cursor, row: row[0]
+        cur = con.cursor()
+        cur.execute("SELECT DISTINCT TRAIT_NAME FROM traits_analyze ORDER BY 1")
+        traits = cur.fetchall()
+        for trait in traits:
+            cur.execute('SELECT MAGNITUDE FROM traits_analyze WHERE TRAIT_NAME = "%s"' % trait)
+            magnitude = cur.fetchall()
+            setmagnitude = max(magnitude) * (len(magnitude)*0.1+1)
+            if setmagnitude >= 3:
+                cur.execute('UPDATE traits SET PROBABILITY = 3 WHERE TRAIT_NAME = "%s"' % trait)
+            elif setmagnitude >= 2:
+                cur.execute('UPDATE traits SET PROBABILITY = 2 WHERE TRAIT_NAME = "%s"' % trait)
+            elif setmagnitude > 1:
+                cur.execute('UPDATE traits SET PROBABILITY = 1 WHERE TRAIT_NAME = "%s"' % trait)
+        con.commit()
+    except Exception as e:
+        logging.error("Updating traits probability failed. Original error was: " + str(e))
+        sys.exit(1)
+
+    con.close()
 
 def initializedb(initialdb, dbfilename, username):
     logging.info("Coping data from initial DB to user DB")
@@ -90,10 +113,15 @@ def initializedb(initialdb, dbfilename, username):
         logging.debug("Attaching initial DB to user DB")
         cur.execute("DROP TABLE IF EXISTS disease")
         cur.execute("DROP TABLE IF EXISTS disease_analyze")
+        cur.execute("DROP TABLE IF EXISTS traits")
+        cur.execute("DROP TABLE IF EXISTS traits_analyze")
         cur.execute("ATTACH DATABASE '%s' AS initdb" % initialdb)
         cur.execute("CREATE TABLE disease AS SELECT * FROM initdb.initial_disease WHERE 0" ) # copy TABLE schema of riscs and pic
         cur.execute("CREATE TABLE disease_analyze AS SELECT * FROM initdb.disease_analyze WHERE 0" ) # copy TABLE schema analyze result
+        cur.execute("CREATE TABLE traits AS SELECT * FROM initdb.initial_traits WHERE 0" ) # copy TABLE schema of riscs and pic
+        cur.execute("CREATE TABLE traits_analyze AS SELECT * FROM initdb.traits_analyze WHERE 0" ) # copy TABLE schema analyze result
         cur.execute("INSERT INTO main.disease SELECT * FROM initdb.initial_disease") # fill in table with pictures and initial values
+        cur.execute("INSERT INTO main.traits SELECT * FROM initdb.initial_traits") # fill in table with pictures and initial values
         con.commit()
         con.close()
     except Exception as e:
