@@ -48,6 +48,7 @@ def performanalyze(analyzedb, dbfilename, username):
         cur.execute("ATTACH DATABASE '%s' AS analyze" % analyzedb)
         cur.execute("INSERT INTO disease_analyze SELECT t2.DISEASE_NAME, t2.DESCRIPTION, t1.ID, t1.RESULT, t2.MAGNITUDE FROM %s AS t1 INNER JOIN analyze.disease_list AS t2 ON (t1.id = t2.RSID) AND t1.RESULT = t2.RESULT;" % username)
         cur.execute("INSERT INTO traits_analyze SELECT t2.TRAIT_NAME, t2.DESCRIPTION, t1.ID, t1.RESULT, t2.MAGNITUDE FROM %s AS t1 INNER JOIN analyze.traits_list AS t2 ON (t1.id = t2.RSID) AND t1.RESULT = t2.RESULT;" % username)
+        cur.execute("INSERT INTO coronavirus_analyze SELECT t2.CORONAVIRUS_NAME, t2.DESCRIPTION, t1.ID, t1.RESULT, t2.MAGNITUDE FROM %s AS t1 INNER JOIN analyze.coronavirus_list AS t2 ON (t1.id = t2.RSID) AND t1.RESULT = t2.RESULT;" % username)
         con.commit()
 #        con.close()
     except Exception as e:
@@ -96,6 +97,27 @@ def performanalyze(analyzedb, dbfilename, username):
         logging.error("Updating traits probability failed. Original error was: " + str(e))
         sys.exit(1)
 
+    try:
+        logging.info("Updating coronavirus probability")
+        con.row_factory = lambda cursor, row: row[0]
+        cur = con.cursor()
+        cur.execute("SELECT DISTINCT CORONAVIRUS_NAME FROM coronavirus_analyze ORDER BY 1")
+        coronaviruses = cur.fetchall()
+        for coronavirus in coronaviruses:
+            cur.execute('SELECT MAGNITUDE FROM coronavirus_analyze WHERE CORONAVIRUS_NAME = "%s"' % coronavirus)
+            magnitude = cur.fetchall()
+            setmagnitude = max(magnitude) * (len(magnitude)*0.1+1)
+            if setmagnitude >= 3:
+                cur.execute('UPDATE coronavirus SET PROBABILITY = 3 WHERE CORONAVIRUS_NAME = "%s"' % coronavirus)
+            elif setmagnitude >= 2:
+                cur.execute('UPDATE coronavirus SET PROBABILITY = 2 WHERE CORONAVIRUS_NAME = "%s"' % coronavirus)
+            elif setmagnitude > 1:
+                cur.execute('UPDATE coronavirus SET PROBABILITY = 1 WHERE CORONAVIRUS_NAME = "%s"' % coronavirus)
+        con.commit()
+    except Exception as e:
+        logging.error("Updating coronavirus probability failed. Original error was: " + str(e))
+        sys.exit(1)
+
     con.close()
 
 def initializedb(initialdb, dbfilename, username):
@@ -115,13 +137,18 @@ def initializedb(initialdb, dbfilename, username):
         cur.execute("DROP TABLE IF EXISTS disease_analyze")
         cur.execute("DROP TABLE IF EXISTS traits")
         cur.execute("DROP TABLE IF EXISTS traits_analyze")
+        cur.execute("DROP TABLE IF EXISTS coronavirus")
+        cur.execute("DROP TABLE IF EXISTS coronavirus_analyze")
         cur.execute("ATTACH DATABASE '%s' AS initdb" % initialdb)
         cur.execute("CREATE TABLE disease AS SELECT * FROM initdb.initial_disease WHERE 0" ) # copy TABLE schema of riscs and pic
         cur.execute("CREATE TABLE disease_analyze AS SELECT * FROM initdb.disease_analyze WHERE 0" ) # copy TABLE schema analyze result
         cur.execute("CREATE TABLE traits AS SELECT * FROM initdb.initial_traits WHERE 0" ) # copy TABLE schema of riscs and pic
         cur.execute("CREATE TABLE traits_analyze AS SELECT * FROM initdb.traits_analyze WHERE 0" ) # copy TABLE schema analyze result
+        cur.execute("CREATE TABLE coronavirus AS SELECT * FROM initdb.initial_coronavirus WHERE 0" ) # copy TABLE schema of riscs and pic
+        cur.execute("CREATE TABLE coronavirus_analyze AS SELECT * FROM initdb.coronavirus_analyze WHERE 0" ) # copy TABLE schema analyze result
         cur.execute("INSERT INTO main.disease SELECT * FROM initdb.initial_disease") # fill in table with pictures and initial values
         cur.execute("INSERT INTO main.traits SELECT * FROM initdb.initial_traits") # fill in table with pictures and initial values
+        cur.execute("INSERT INTO main.coronavirus SELECT * FROM initdb.initial_coronavirus") # fill in table with pictures and initial values
         con.commit()
         con.close()
     except Exception as e:

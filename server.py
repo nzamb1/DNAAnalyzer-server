@@ -114,6 +114,28 @@ def trbasiccounters():
 
         return jsonify({'TrPorbability' : trporbability , 'Traits' : traits, 'TrIcons' : tricons})
 
+@app.route("/corbasiccounters", methods=['POST', 'GET'])
+def corbasiccounters():
+    if request.method == 'POST':
+        username = request.form['userName']
+        dbfile    = userdbpath + request.form['userName'] + ".db"
+
+        logging.info("Username %s" % username)
+        logging.info("Check if DB file exists: %s" % dbfile)
+	if not os.path.exists(dbfile):
+            logging.error("DB file does not exists: %s" % dbfile)
+            return "Something is wrong...", 500
+
+        logging.info("Calling function to read data from DB")
+        counters = coronavirus_get_basic_counters(dbfile)
+
+        corvirus     = [i[0] for i in counters]
+        corporbability = [i[1] for i in counters]
+        coricons       = [base64.b64encode(i[2]) for i in counters]
+
+        return jsonify({'CorPorbability' : corporbability , 'Corvirus' : corvirus, 'CorIcons' : coricons})
+        #return jsonify({'TrPorbability' : trporbability , 'Traits' : traits, 'TrIcons' : tricons})
+
 @app.route("/searchrsid", methods=['POST', 'GET'])
 def searchrsid():
     usertablename= "userdata"
@@ -206,6 +228,36 @@ def gettraitdetails():
 
     return jsonify({'Description' : description ,'Rsid' : rsid, 'Mutation' : mutation})
 
+@app.route("/getcordetails", methods=['POST', 'GET'])
+def getcordetails():
+    username     = request.form['userName']
+    corname  = request.form['corname']
+
+    dbfile       = userdbpath + username + ".db"
+
+    logging.debug("Recived username: %s " % username)
+    logging.debug("Recived corname: %s " % corname)
+    try:
+        logging.info("Opening database file %s" % dbfile)
+        con = sqlite3.connect(dbfile)
+        cur = con.cursor()
+
+        logging.debug("Reading data from database")
+
+        # CORONAVIRUS_NAME TEXT, DESCRIPTION TEXT, RSID TEXT, RESULT TEXT, MAGNITUDE REAL
+        cur.execute('SELECT DESCRIPTION, RSID, RESULT FROM coronavirus_analyze WHERE CORONAVIRUS_NAME = "%s"' % corname)
+        res = cur.fetchall()
+        con.close()
+    except Exception as e:
+        logging.error("Error reading data from DB. Original error was: " + str(e))
+        return "Error reading data from DB...", 500
+
+    description = [i[0] for i in res]
+    rsid        = [i[1] for i in res]
+    mutation    = [i[2] for i in res] 
+
+    return jsonify({'Description' : description ,'Rsid' : rsid, 'Mutation' : mutation})
+
 def get_basic_counters(dbfile):
     logging.info("Opening database file %s" % dbfile)
     con = sqlite3.connect(dbfile)
@@ -225,6 +277,18 @@ def traits_get_basic_counters(dbfile):
 
     logging.debug("Reading data from database")
     cur.execute("SELECT DISTINCT t1.* FROM traits AS t1 JOIN traits_analyze AS t2 ON (t1.TRAIT_NAME = t2.TRAIT_NAME) ORDER BY 2 DESC")
+    res = cur.fetchall()
+
+    con.close()
+    return (res)
+
+def coronavirus_get_basic_counters(dbfile):
+    logging.info("Opening database file %s" % dbfile)
+    con = sqlite3.connect(dbfile)
+    cur = con.cursor()
+
+    logging.debug("Reading data from database")
+    cur.execute("SELECT DISTINCT t1.* FROM coronavirus AS t1 JOIN coronavirus_analyze AS t2 ON (t1.CORONAVIRUS_NAME = t2.CORONAVIRUS_NAME) ORDER BY 2 DESC")
     res = cur.fetchall()
 
     con.close()
